@@ -1,15 +1,26 @@
+<%@page import="kr.co.jboard1.dao.ArticleDao"%>
+<%@page import="java.util.ArrayList"%>
+<%@page import="java.util.List"%>
+<%@page import="kr.co.jboard1.bean.ArticleBean"%>
+<%@page import="java.sql.ResultSet"%>
+<%@page import="java.sql.Statement"%>
+<%@page import="java.sql.DriverManager"%>
+<%@page import="java.sql.Connection"%>
 <%@page import="kr.co.jboard1.bean.MemberBean"%>
 <%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8"%>
 <%
 	// 현재 로그인 사용자 정보 확인
 	MemberBean mb = (MemberBean)session.getAttribute("smember");
+
+	// 목록 게시물 가져오기
+	List<ArticleBean> articles = ArticleDao.getInstance().selectArticles();
 %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>글목록</title>
-    <link rel="stylesheet" href="./css/style.css">    
+    <link rel="stylesheet" href="/Jboard1/css/style.css">    
 </head>
 <body>
     <div id="wrapper">
@@ -28,13 +39,16 @@
                         <th>날짜</th>
                         <th>조회</th>
                     </tr>
+                    
+                    <% for (ArticleBean ab : articles){ %>
                     <tr>
-                        <td>1</td>
-                        <td><a href="/Jboard1/view.jsp">테스트 제목입니다.</a>&nbsp;[3]</td>
-                        <td>길동이</td>
-                        <td>20-05-12</td>
-                        <td>12</td>
+                        <td><%= ab.getSeq() %></td>
+                        <td><a href="/Jboard1/view.jsp?seq=<%= ab.getSeq() %>"><%= ab.getTitle() %></a>&nbsp;[<%= ab.getComment() %>]</td>
+                        <td><%= ab.getNick() %></td>
+                        <td><%= ab.getRdate().substring(2, 10) %></td>
+                        <td><%= ab.getHit() %></td>
                     </tr>
+                    <% } %>
                 </table>
             </article>
 

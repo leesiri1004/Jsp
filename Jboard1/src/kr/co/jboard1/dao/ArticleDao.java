@@ -1,0 +1,193 @@
+package kr.co.jboard1.dao;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+
+import kr.co.jboard1.bean.ArticleBean;
+import kr.co.jboard1.db.DBConfig;
+
+public class ArticleDao {
+
+	private static ArticleDao instance = new ArticleDao();
+
+	private ArticleDao() {
+	}
+
+	public static ArticleDao getInstance() {
+		return instance;
+	}
+
+	private Connection conn			= null;
+	private PreparedStatement psmt 	= null;
+	private Statement stmt 			= null;
+	private ResultSet rs 			= null;
+
+	public void insertArticle(ArticleBean ab) throws Exception {
+
+		conn = DBConfig.getInstance().getConnection();
+
+		// 3단계 - SQL 실행객체 생성
+		stmt = conn.createStatement();
+
+		// 4단계
+		String sql = "INSERT INTO `JBOARD_ARTICLE` SET "; // 오타주의***** "INSERT"
+		sql += "`title`='" + ab.getTitle() + "',";
+		sql += "`content`='" + ab.getContent() + "',";
+		sql += "`uid`='" + ab.getUid() + "',";
+		sql += "`regip`='" + ab.getRegip() + "',";
+		sql += "`rdate`=NOW();";
+		stmt.executeUpdate(sql);
+
+		// 5단계
+
+		// 6단계
+		close();
+
+	}
+
+	public ArticleBean selectArticle(String seq) throws Exception {
+
+		conn = DBConfig.getInstance().getConnection();
+
+		// 3단계 - SQL 실행객체 생성
+		stmt = conn.createStatement();
+
+		// 4단계
+		String sql  = "SELECT * FROM `JBOARD_ARTICLE` ";
+		       sql += "WHERE `seq`=" + seq;
+
+		rs = stmt.executeQuery(sql);
+
+		// 5단계
+		ArticleBean ab = new ArticleBean();
+
+		if (rs.next()) {
+			ab.setSeq(rs.getInt(1));
+			ab.setParent(rs.getInt(2));
+			ab.setComment(rs.getInt(3));
+			ab.setCate(rs.getString(4));
+			ab.setTitle(rs.getString(5));
+			ab.setContent(rs.getString(6));
+			ab.setFile(rs.getInt(7));
+			ab.setHit(rs.getInt(8));
+			ab.setUid(rs.getString(9));
+			ab.setRegip(rs.getString(10));
+			ab.setRdate(rs.getString(11));
+		}
+
+		// 6단계
+		close();
+
+		return ab;
+	}
+
+	public List<ArticleBean> selectArticles() throws Exception {
+
+		conn = DBConfig.getInstance().getConnection();
+
+		// 3단계 - SQL 실행객체 생성
+		stmt = conn.createStatement();
+
+		// 4단계
+		String sql  = "SELECT a.*, b.nick FROM `JBOARD_ARTICLE` AS a ";
+	       	   sql += "JOIN `JBOARD_MEMBER` AS b ";
+		       sql += "ON a.uid = b.uid ";
+		       sql += "ORDER BY `seq` DESC;"; // 최신 글 순서로 출력된다
+
+		rs = stmt.executeQuery(sql);
+
+		// 5단계
+		List<ArticleBean> articles = new ArrayList<>();
+
+		while (rs.next()) {
+
+			ArticleBean ab = new ArticleBean();
+
+			ab.setSeq(rs.getInt(1));
+			ab.setParent(rs.getInt(2));
+			ab.setComment(rs.getInt(3));
+			ab.setCate(rs.getString(4));
+			ab.setTitle(rs.getString(5));
+			ab.setContent(rs.getString(6));
+			ab.setFile(rs.getInt(7));
+			ab.setHit(rs.getInt(8));
+			ab.setUid(rs.getString(9));
+			ab.setRegip(rs.getString(10));
+			ab.setRdate(rs.getString(11));
+			ab.setNick(rs.getString(12));
+
+			articles.add(ab);
+		}
+
+		// 6단계
+		close();
+
+		return articles;
+	}
+
+	public void updateArticle(String title, String content, String seq) throws Exception {
+
+		conn = DBConfig.getInstance().getConnection();
+
+		// 3단계 - SQL 실행객체 생성
+		String sql = "UPDATE `JBOARD_ARTICLE` SET `title`=?, `content`=? WHERE `seq`=?";
+		psmt = conn.prepareStatement(sql);
+		psmt.setString(1, title);
+		psmt.setString(2, content);
+		psmt.setString(3, seq);
+
+		// 4단계
+		psmt.executeUpdate();
+
+		// 5단계
+
+		// 6단계
+		close();
+	}
+
+	public void updateHit(String seq) throws Exception {
+
+		conn = DBConfig.getInstance().getConnection();
+
+		// 3단계 - SQL 실행객체 생성
+		stmt = conn.createStatement();
+
+		// 4단계
+		String sqlUpdate = "UPDATE `JBOARD_ARTICLE` SET `hit`=`hit`+1 WHERE `seq`=" + seq;
+		stmt.executeUpdate(sqlUpdate);
+
+		// 5단계
+
+		// 6단계
+		close();
+	}
+
+	public void deleteArticle(String seq) throws Exception {
+
+		conn = DBConfig.getInstance().getConnection();
+
+		// 3단계 - SQL 실행객체 생성
+		String sql = "DELETE FROM `JBOARD_ARTICLE` WHERE `seq`=?";
+		psmt = conn.prepareStatement(sql);
+		psmt.setString(1, seq);
+
+		// 4단계
+		psmt.executeUpdate();
+
+		// 5단계
+
+		// 6단계
+		close();
+	}
+
+	public void close() throws Exception {
+		if (rs != null)   rs.close();
+		if (stmt != null) stmt.close();
+		if (psmt != null) psmt.close();
+		if (conn != null) conn.close();
+	}
+}
