@@ -25,7 +25,81 @@ public class ArticleDao {
 	private PreparedStatement psmt 	= null;
 	private Statement stmt 			= null;
 	private ResultSet rs 			= null;
+	
+	
+	// 페이지번호 그룹 구하기
+	public int[] getPageGroup(int currentPg, int lastPgNum) {
+		int groupCurrent = (int)Math.ceil(currentPg / 10.0);
+		int groupStart = (groupCurrent - 1) * 10 +1;
+		int groupEnd = groupCurrent * 10;
 
+		if(groupEnd > lastPgNum){
+			groupEnd = lastPgNum;
+		}
+		
+		int[] groups = {groupStart, groupEnd};
+		
+		return groups;
+	}
+	
+	// 현재 페이지 글 시작번호 구하기
+	public int getCurrentStartNum(int total, int limitStart) {
+		return total - limitStart;
+	}
+	
+	// 현재 페이지 번호 구하기
+	public int getCurrentPg(String pg) {
+		int currentPg = 1;
+		if(pg != null){
+			currentPg = Integer.parseInt(pg);
+		}
+		return currentPg;
+	}
+	
+	// 게시물 LIMIT 시작번호 구하기
+	public int getLimitStart(int currentPg) {
+		int limitStart = (currentPg - 1) * 10;
+		return limitStart;
+	}
+	
+	// 전체 페이지 번호 구하기
+	public int getLastPgNum(int total) {
+		int lastPgNum = 0; //  page는 예약어 그래서 다른 이름으로 pg
+		
+		if(total % 10 == 0){
+			lastPgNum = total / 10;
+		}else{
+			lastPgNum = total / 10 + 1;
+		}
+	
+		return lastPgNum;
+	}
+	
+	// 글 순서번호 구하기
+	public int selectCountArticle() throws Exception {
+		// 1, 2단계
+		conn = DBConfig.getInstance().getConnection();
+		
+		// 3단계
+		stmt = conn.createStatement();
+		
+		// 4단계
+		String sql = "SELECT COUNT(*) FROM `JBOARD_ARTICLE`"; // SELECT COUNT(*) = 띄우지않고 COUNT 옆에 바로 (*)붙여야함
+		rs = stmt.executeQuery(sql);
+		
+		// 5단계
+		int total = 0;
+		if(rs.next()){
+			total = rs.getInt(1);
+		}
+		
+		// 6단계
+		close();
+		
+		return total;
+	}
+
+	// 게시물 insert 하기
 	public void insertArticle(ArticleBean ab) throws Exception {
 
 		conn = DBConfig.getInstance().getConnection();
@@ -46,9 +120,10 @@ public class ArticleDao {
 
 		// 6단계
 		close();
-
 	}
 
+	// 조회글 가져오기
+	// 수정글 가져오기
 	public ArticleBean selectArticle(String seq) throws Exception {
 
 		conn = DBConfig.getInstance().getConnection();
@@ -85,7 +160,8 @@ public class ArticleDao {
 		return ab;
 	}
 
-	public List<ArticleBean> selectArticles() throws Exception {
+	// 목록 게시물 가져오기
+	public List<ArticleBean> selectArticles(int limitStart) throws Exception {
 
 		conn = DBConfig.getInstance().getConnection();
 
@@ -96,7 +172,8 @@ public class ArticleDao {
 		String sql  = "SELECT a.*, b.nick FROM `JBOARD_ARTICLE` AS a ";
 	       	   sql += "JOIN `JBOARD_MEMBER` AS b ";
 		       sql += "ON a.uid = b.uid ";
-		       sql += "ORDER BY `seq` DESC;"; // 최신 글 순서로 출력된다
+		       sql += "ORDER BY `seq` DESC "; // 최신 글 순서로 출력된다
+		       sql += "LIMIT "+limitStart+", 10;";
 
 		rs = stmt.executeQuery(sql);
 
@@ -129,6 +206,7 @@ public class ArticleDao {
 		return articles;
 	}
 
+	// 글 업데이트
 	public void updateArticle(String title, String content, String seq) throws Exception {
 
 		conn = DBConfig.getInstance().getConnection();
@@ -149,6 +227,7 @@ public class ArticleDao {
 		close();
 	}
 
+	// 조회수 업데이트
 	public void updateHit(String seq) throws Exception {
 
 		conn = DBConfig.getInstance().getConnection();
@@ -166,6 +245,7 @@ public class ArticleDao {
 		close();
 	}
 
+	// 글 삭제하기
 	public void deleteArticle(String seq) throws Exception {
 
 		conn = DBConfig.getInstance().getConnection();

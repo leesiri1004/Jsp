@@ -14,7 +14,7 @@
 	String content  = request.getParameter("content");
 	String file		= request.getParameter("file");
 	
-	// 업데이트
+	// 글 업데이트
 	ArticleDao.getInstance().updateArticle(title, content, seq);
 	
 	// Redirect
