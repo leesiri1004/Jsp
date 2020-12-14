@@ -8,15 +8,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import kr.co.jboard1.bean.ArticleBean;
+import kr.co.jboard1.bean.FileBean;
 import kr.co.jboard1.db.DBConfig;
 
 public class ArticleDao {
 
 	private static ArticleDao instance = new ArticleDao();
-
-	private ArticleDao() {
-	}
-
+	private ArticleDao() {}
 	public static ArticleDao getInstance() {
 		return instance;
 	}
@@ -99,8 +97,27 @@ public class ArticleDao {
 		return total;
 	}
 
+	// 첨부파일
+	public void insertFile(FileBean fb) throws Exception {
+		// 1단계, 2단계, 3단계
+		conn = DBConfig.getInstance().getConnection();
+		stmt = conn.createStatement();
+		
+		// 4단계
+		String sql  = "INSERT INTO `JBOARD_FILE` SET ";
+			   sql += "`parent`="+fb.getParent()+",";
+	 	       sql += "`oldName`='"+fb.getOldName()+"',";
+		       sql += "`newName`='"+fb.getNewName()+"',";
+		       sql += "`rdate`=NOW();";
+		stmt.executeUpdate(sql);       
+
+		// 5단계
+		// 6단계
+		close();
+	}
+	
 	// 게시물 insert 하기
-	public void insertArticle(ArticleBean ab) throws Exception {
+	public int insertArticle(ArticleBean ab) throws Exception {
 
 		conn = DBConfig.getInstance().getConnection();
 
@@ -108,32 +125,55 @@ public class ArticleDao {
 		stmt = conn.createStatement();
 
 		// 4단계
-		String sql = "INSERT INTO `JBOARD_ARTICLE` SET "; // 오타주의***** "INSERT"
-		sql += "`title`='" + ab.getTitle() + "',";
-		sql += "`content`='" + ab.getContent() + "',";
-		sql += "`uid`='" + ab.getUid() + "',";
-		sql += "`regip`='" + ab.getRegip() + "',";
-		sql += "`rdate`=NOW();";
+		String sql  = "INSERT INTO `JBOARD_ARTICLE` SET "; // 오타주의***** "INSERT"
+		       sql += "`title`='" + ab.getTitle() + "',";
+		       sql += "`content`='" + ab.getContent() + "',";
+		       sql += "`file`=" + ab.getFile() + ",";
+		       sql += "`uid`='" + ab.getUid() + "',";
+		       sql += "`regip`='" + ab.getRegip() + "',";
+		       sql += "`rdate`=NOW();";
 		stmt.executeUpdate(sql);
 
 		// 5단계
 
 		// 6단계
 		close();
+		
+		// 부여된 글번호
+		return selectMaxSeq();
 	}
 
+	// 첨부파일 선택
+	public int selectMaxSeq() throws Exception {
+		conn = DBConfig.getInstance().getConnection();
+		stmt = conn.createStatement();
+		String sql = "SELECT MAX(`seq`) FROM `JBOARD_ARTICLE`;";
+		
+		rs = stmt.executeQuery(sql);
+		
+		int parent = 0;
+		if (rs.next()) {
+			parent = rs.getInt(1);
+		}
+		
+		close();
+		
+		return parent;
+	}
+	
 	// 조회글 가져오기
 	// 수정글 가져오기
 	public ArticleBean selectArticle(String seq) throws Exception {
-
 		conn = DBConfig.getInstance().getConnection();
 
 		// 3단계 - SQL 실행객체 생성
 		stmt = conn.createStatement();
 
 		// 4단계
-		String sql  = "SELECT * FROM `JBOARD_ARTICLE` ";
-		       sql += "WHERE `seq`=" + seq;
+		String sql  = "SELECT a.*, b.oldName, b.download FROM `JBOARD_ARTICLE` AS a ";
+			   sql += "LEFT JOIN `JBOARD_FILE` AS b ";
+		       sql += "ON a.seq = b.parent ";
+		       sql += "WHERE a.seq="+seq; // `a.seq`는 틀린표현. 
 
 		rs = stmt.executeQuery(sql);
 
@@ -152,6 +192,8 @@ public class ArticleDao {
 			ab.setUid(rs.getString(9));
 			ab.setRegip(rs.getString(10));
 			ab.setRdate(rs.getString(11));
+			ab.setOldName(rs.getString(12));
+			ab.setDownload(rs.getInt(13));
 		}
 
 		// 6단계

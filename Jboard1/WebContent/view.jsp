@@ -1,4 +1,3 @@
-<%@page import="java.util.List"%>
 <%@page import="kr.co.jboard1.dao.ArticleDao"%>
 <%@page import="kr.co.jboard1.bean.ArticleBean"%>
 <%@page import="java.sql.ResultSet"%>
@@ -9,38 +8,13 @@
 <%
 	// 파라미터 수신
 	request.setCharacterEncoding("UTF-8");
-
 	String seq = request.getParameter("seq");
-	String pg = request.getParameter("pg");
 	
-	ArticleDao dao = ArticleDao.getInstance();
-	
-	// 조회수 업데이트
-	dao.updateHit(seq);
+	// 조회수 업데이터
+	ArticleDao.getInstance().updateHit(seq);
 	
 	// 조회글 가져오기
-	ArticleBean ab = dao.selectArticle(seq);
-	
-	// 글 전체 갯수 구하기
-	int total = dao.selectCountArticle();
-	
-	// 전체 페이지 번호 구하기
-	int lastPgNum = dao.getLastPgNum(total);
-
-	// 현재 페이지 번호 구하기
-	int currentPg = dao.getCurrentPg(pg);
-	
-	// 게시물 LIMIT 시작번호 구하기
-	int limitStart = dao.getLimitStart(currentPg);
-	
-	// 현재 페이지 글 시작번호 구하기
-	int currentStartNum = dao.getCurrentStartNum(total, limitStart);
-	
-	// 페이지번호 그룹 구하기
-	int[] groups = dao.getPageGroup(currentPg, lastPgNum);
-	
-	// 목록 게시물 가져오기
-	List<ArticleBean> articles = dao.selectArticles(limitStart);
+	ArticleBean ab = ArticleDao.getInstance().selectArticle(seq);
 %>
 <!DOCTYPE html>
 <html lang="en">
@@ -62,8 +36,8 @@
                 <tr>
                     <td>첨부파일</td>
                     <td>
-                        <a href="#">2020년 상반기 매출자료.xls</a>
-                        <span>7회 다운로드</span>
+                        <a href="#"><%= ab.getOldName() %></a>
+                        <span><%= ab.getDownload() %>회 다운로드</span>
                     </td>
                 </tr>
                 <% } %>
@@ -77,7 +51,7 @@
             <div>
                 <a href="/Jboard1/proc/delete.jsp?seq=<%= ab.getSeq() %>" class="btnDelete">삭제</a>
                 <a href="/Jboard1/modify.jsp?seq=<%= ab.getSeq() %>" class="btnModify">수정</a>
-                <a href="/Jboard1/list.jsp?pg=<%= currentPg %>" class="btnList">목록</a>
+                <a href="/Jboard1/list.jsp" class="btnList">목록</a>
             </div>  
             
             <!-- 댓글리스트 -->
