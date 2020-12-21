@@ -19,13 +19,15 @@ public class ArticleDao {
 		return instance;
 	}
 
+	// DB접속 관련 멤버객체
 	private Connection conn			= null;
 	private PreparedStatement psmt 	= null;
 	private Statement stmt 			= null;
 	private ResultSet rs 			= null;
 	
 	
-	// 페이지번호 그룹 구하기
+	// 리스트 페이지처리 관련 메서드
+	// 페이지 번호 그룹 구하기
 	public int[] getPageGroup(int currentPg, int lastPgNum) {
 		int groupCurrent = (int)Math.ceil(currentPg / 10.0);
 		int groupStart = (groupCurrent - 1) * 10 +1;
@@ -39,12 +41,10 @@ public class ArticleDao {
 		
 		return groups;
 	}
-	
 	// 현재 페이지 글 시작번호 구하기
 	public int getCurrentStartNum(int total, int limitStart) {
 		return total - limitStart;
 	}
-	
 	// 현재 페이지 번호 구하기
 	public int getCurrentPg(String pg) {
 		int currentPg = 1;
@@ -53,13 +53,11 @@ public class ArticleDao {
 		}
 		return currentPg;
 	}
-	
 	// 게시물 LIMIT 시작번호 구하기
 	public int getLimitStart(int currentPg) {
 		int limitStart = (currentPg - 1) * 10;
 		return limitStart;
 	}
-	
 	// 전체 페이지 번호 구하기
 	public int getLastPgNum(int total) {
 		int lastPgNum = 0; //  page는 예약어 그래서 다른 이름으로 pg
@@ -72,7 +70,6 @@ public class ArticleDao {
 	
 		return lastPgNum;
 	}
-	
 	// 글 순서번호 구하기
 	public int selectCountArticle() throws Exception {
 		// 1, 2단계
@@ -82,7 +79,7 @@ public class ArticleDao {
 		stmt = conn.createStatement();
 		
 		// 4단계
-		String sql = "SELECT COUNT(*) FROM `JBOARD_ARTICLE`"; // SELECT COUNT(*) = 띄우지않고 COUNT 옆에 바로 (*)붙여야함
+		String sql = "SELECT COUNT(*) FROM `JBOARD_ARTICLE` WHERE `parent`=0"; // SELECT COUNT(*) = 띄우지않고 COUNT 옆에 바로 (*)붙여야함
 		rs = stmt.executeQuery(sql);
 		
 		// 5단계
@@ -97,7 +94,24 @@ public class ArticleDao {
 		return total;
 	}
 
-	// 첨부파일
+	
+	// 첨부파일 관련메서드
+	// 첨부파일 다운로드 기능
+	public void updateFileDownload(String seq) throws Exception {
+		// 1단계, 2단계, 3단계	
+		conn = DBConfig.getInstance().getConnection();
+		stmt = conn.createStatement();
+		
+		// 4단계
+		String sql  = "UPDATE `JBOARD_FILE` SET `download`=`download`+1 ";
+			   sql += "WHERE `seq`="+seq; // 파일번호
+		stmt.executeUpdate(sql);
+
+		// 5단계
+		// 6단계
+		close();
+	}
+	// 첨부파일 등록하기
 	public void insertFile(FileBean fb) throws Exception {
 		// 1단계, 2단계, 3단계
 		conn = DBConfig.getInstance().getConnection();
@@ -115,10 +129,34 @@ public class ArticleDao {
 		// 6단계
 		close();
 	}
+	// 첨부파일 다운로드 시 oldName 기능
+	public FileBean selectFile(String seq) throws Exception {
+		conn = DBConfig.getInstance().getConnection();
+		stmt = conn.createStatement();
+		
+		String sql = "SELECT * FROM `JBOARD_FILE` WHERE `seq`="+seq;
+		rs = stmt.executeQuery(sql);
+		
+		FileBean fb = new FileBean();
+		
+		if (rs.next()) {
+			fb.setSeq(rs.getInt(1));
+			fb.setParent(rs.getInt(2));
+			fb.setOldName(rs.getString(3));
+			fb.setNewName(rs.getString(4));
+			fb.setDownload(rs.getInt(5));
+			fb.setRdate(rs.getString(6));
+		}
+		
+		close();
+		
+		return fb;
+	}
 	
+	
+	// 게시글 관련 메서드
 	// 게시물 insert 하기
 	public int insertArticle(ArticleBean ab) throws Exception {
-
 		conn = DBConfig.getInstance().getConnection();
 
 		// 3단계 - SQL 실행객체 생성
@@ -142,8 +180,7 @@ public class ArticleDao {
 		// 부여된 글번호
 		return selectMaxSeq();
 	}
-
-	// 첨부파일 선택
+	// 부여된 글번호 (자동기능)
 	public int selectMaxSeq() throws Exception {
 		conn = DBConfig.getInstance().getConnection();
 		stmt = conn.createStatement();
@@ -160,7 +197,6 @@ public class ArticleDao {
 		
 		return parent;
 	}
-	
 	// 조회글 가져오기
 	// 수정글 가져오기
 	public ArticleBean selectArticle(String seq) throws Exception {
@@ -170,7 +206,7 @@ public class ArticleDao {
 		stmt = conn.createStatement();
 
 		// 4단계
-		String sql  = "SELECT a.*, b.oldName, b.download FROM `JBOARD_ARTICLE` AS a ";
+		String sql  = "SELECT a.*, b.seq, b.oldName, b.download FROM `JBOARD_ARTICLE` AS a ";
 			   sql += "LEFT JOIN `JBOARD_FILE` AS b ";
 		       sql += "ON a.seq = b.parent ";
 		       sql += "WHERE a.seq="+seq; // `a.seq`는 틀린표현. 
@@ -192,8 +228,9 @@ public class ArticleDao {
 			ab.setUid(rs.getString(9));
 			ab.setRegip(rs.getString(10));
 			ab.setRdate(rs.getString(11));
-			ab.setOldName(rs.getString(12));
-			ab.setDownload(rs.getInt(13));
+			ab.setFileSeq(rs.getInt(12));
+			ab.setOldName(rs.getString(13));
+			ab.setDownload(rs.getInt(14));
 		}
 
 		// 6단계
@@ -201,7 +238,6 @@ public class ArticleDao {
 
 		return ab;
 	}
-
 	// 목록 게시물 가져오기
 	public List<ArticleBean> selectArticles(int limitStart) throws Exception {
 
@@ -214,6 +250,7 @@ public class ArticleDao {
 		String sql  = "SELECT a.*, b.nick FROM `JBOARD_ARTICLE` AS a ";
 	       	   sql += "JOIN `JBOARD_MEMBER` AS b ";
 		       sql += "ON a.uid = b.uid ";
+		       sql += "WHERE `parent`=0 "; // parent가 0이 아닌 글만 목록에 출력, 즉 코멘트는 리스트에 출력안되게 하는 쿼리 
 		       sql += "ORDER BY `seq` DESC "; // 최신 글 순서로 출력된다
 		       sql += "LIMIT "+limitStart+", 10;";
 
@@ -247,7 +284,6 @@ public class ArticleDao {
 
 		return articles;
 	}
-
 	// 글 업데이트
 	public void updateArticle(String title, String content, String seq) throws Exception {
 
@@ -268,7 +304,19 @@ public class ArticleDao {
 		// 6단계
 		close();
 	}
-
+	// 댓글 업데이트
+	public void updateArticleComment(String parent) throws Exception {
+		conn = DBConfig.getInstance().getConnection();
+		stmt = conn.createStatement();
+		
+		String sql  = "UPDATE `JBOARD_ARTICLE` SET `comment`=`comment`-1 ";
+		       sql += "WHERE `seq`="+parent;
+		
+		stmt.executeUpdate(sql);
+		
+		close();
+		
+	}
 	// 조회수 업데이트
 	public void updateHit(String seq) throws Exception {
 
@@ -286,7 +334,6 @@ public class ArticleDao {
 		// 6단계
 		close();
 	}
-
 	// 글 삭제하기
 	public void deleteArticle(String seq) throws Exception {
 
@@ -306,6 +353,102 @@ public class ArticleDao {
 		close();
 	}
 
+	
+	// 댓글 관련 메서드
+	// 원글 댓글 카운트 UPDATE
+	public void updateCommentCount(String seq) throws Exception {
+		conn = DBConfig.getInstance().getConnection();
+		stmt = conn.createStatement();
+		
+		String sql  = "UPDATE `JBOARD_ARTICLE` SET `comment`=`comment`+1 ";
+		       sql += "WHERE `seq`="+seq;
+		
+		stmt.executeUpdate(sql);
+		
+		close();
+	}
+	// 댓글 쓰기 기능
+	public void insertComment(ArticleBean ab) throws Exception {
+		conn = DBConfig.getInstance().getConnection();
+		stmt = conn.createStatement();
+		
+		String sql  = "INSERT INTO `JBOARD_ARTICLE` SET ";
+			   sql += "`parent`='"+ab.getParent()+"',";
+			   sql += "`content`='"+ab.getContent()+"',";
+			   sql += "`uid`='"+ab.getUid()+"',";
+			   sql += "`regip`='"+ab.getRegip()+"',";
+			   sql += "`rdate`=NOW();";
+			   
+		stmt.executeUpdate(sql);
+		
+		close();
+	}
+	// 댓글 목록 기능
+	public List<ArticleBean> selectComments(String parent) throws Exception {
+		conn = DBConfig.getInstance().getConnection();
+		stmt = conn.createStatement();
+		
+		String sql  = "SELECT a.*, b.nick FROM `JBOARD_ARTICLE` AS a ";
+			   sql += "JOIN `JBOARD_MEMBER` AS b ";
+			   sql += "ON a.uid=b.uid ";
+			   sql += "WHERE `parent`="+parent+" ";
+			   sql += "ORDER BY `seq` ASC;";
+		
+		rs = stmt.executeQuery(sql);
+		
+		List<ArticleBean> comments = new ArrayList<ArticleBean>();
+		while (rs.next()) {
+			ArticleBean ab = new ArticleBean();
+
+			ab.setSeq(rs.getInt(1));
+			ab.setParent(rs.getInt(2));
+			ab.setComment(rs.getInt(3));
+			ab.setCate(rs.getString(4));
+			ab.setTitle(rs.getString(5));
+			ab.setContent(rs.getString(6));
+			ab.setFile(rs.getInt(7));
+			ab.setHit(rs.getInt(8));
+			ab.setUid(rs.getString(9));
+			ab.setRegip(rs.getString(10));
+			ab.setRdate(rs.getString(11));
+			ab.setNick(rs.getString(12));
+
+			comments.add(ab);
+		}
+			   
+		close();
+		
+		return comments;
+	}
+	// 댓글삭제
+	public void deleteComment(String seq) throws Exception {
+		conn = DBConfig.getInstance().getConnection();
+		stmt = conn.createStatement();
+
+		// 3단계 - SQL 실행객체 생성
+		String sql = "DELETE FROM `JBOARD_ARTICLE` WHERE `seq`="+seq;
+		stmt.executeUpdate(sql);
+
+		close();
+	}
+	// 댓글수정
+	public int updateComment(String content, String seq) throws Exception {
+		conn = DBConfig.getInstance().getConnection();
+		stmt = conn.createStatement();
+
+		// 3단계 - SQL 실행객체 생성
+		String sql = "UPDATE `JBOARD_ARTICLE` SET `content`='"+content+"' WHERE `seq`="+seq;
+		int result = stmt.executeUpdate(sql);
+
+		close();
+		
+		return result;
+	}
+	
+	public void selectComment() throws Exception {}
+	
+	
+	// DB Access 객체 해제
 	public void close() throws Exception {
 		if (rs != null)   rs.close();
 		if (stmt != null) stmt.close();

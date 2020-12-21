@@ -25,26 +25,84 @@ public class UserDao {
 	private Statement		  stmt = null;
 	private ResultSet 			rs = null;
 
+	
+	// 아이디 중복확인
+	public int selectCountUser(String uid) throws Exception {
+		conn = DBConfig.getInstance().getConnection();
+		stmt = conn.createStatement();
+		
+		String sql = "SELECT COUNT(*) FROM `JBOARD_MEMBER` WHERE `uid`='"+uid+"';";
+		rs = stmt.executeQuery(sql);
+		
+		int count = 0;
+		
+		if(rs.next()) {
+			count = rs.getInt(1);
+		}
+		
+		close();
+		
+		return count;
+	}
+	
+	// 닉네임 중복확인
+	public int selectCountNick(String nick) throws Exception {
+		conn = DBConfig.getInstance().getConnection();
+		stmt = conn.createStatement();
+		
+		String sql = "SELECT COUNT(*) FROM `JBOARD_MEMBER` WHERE `nick`='"+nick+"';";
+		rs = stmt.executeQuery(sql);
+		
+		int count = 0;
+		
+		if(rs.next()) {
+			count = rs.getInt(1);
+		}
+		
+		close();
+		
+		return count;
+	}
+	
+	// 전화번호 중복확인
+	public int selectCountHp(String hp) throws Exception {
+		conn = DBConfig.getInstance().getConnection();
+		stmt = conn.createStatement();
+		
+		String sql  = "SELECT COUNT(*) FROM `JBOARD_MEMBER` WHERE `hp`='"+hp+"';";
+		
+		rs = stmt.executeQuery(sql);
+		
+		int count = 0;
+		if (rs.next()) {
+			count = rs.getInt(1);
+		}
+		
+		close();
+		
+		return count;
+	}
+	
 	public void insertUser(MemberBean mb) throws Exception {
 
-		conn = DBConfig.getInstance().getConnection(); // 1, 2 단계
-
+		conn = DBConfig.getInstance().getConnection();
+		
 		// 3단계 - SQL 실행객체 생성
 		stmt = conn.createStatement();
-
+		
 		// 4단계 - SQL 실행
 		String sql  = "INSERT INTO `JBOARD_MEMBER` SET ";
-			   sql += "`uid`='" + mb.getUid() + "',";
-		       sql += "`pass`= PASSWORD('" + mb.getPass() + "'),";
-		       sql += "`name`='" + mb.getName() + "',";
-		       sql += "`nick`='" + mb.getNick() + "',";
-		       sql += "`email`='" + mb.getEmail() + "',";
-		       sql += "`hp`='" + mb.getHp() + "',";
-		       sql += "`zip`='" + mb.getZip() + "',";
-		       sql += "`addr1`='" + mb.getAddr1() + "',";
-		       sql += "`addr2`='" + mb.getAddr2() + "',";
-		       sql += "`regip`='" + mb.getRegip() + "',";
-		       sql += "`rdate`= NOW();";
+			   sql += "`uid`='"+mb.getUid()+"',";
+			   sql += "`pass`=PASSWORD('"+mb.getPass()+"'),"; 
+			   sql += "`name`='"+mb.getName()+"',"; 
+			   sql += "`nick`='"+mb.getNick()+"',"; 
+			   sql += "`email`='"+mb.getEmail()+"',"; 
+			   sql += "`hp`='"+mb.getHp()+"',"; 
+			   sql += "`zip`='"+mb.getZip()+"',"; 
+			   sql += "`addr1`='"+mb.getAddr1()+"',"; 
+			   sql += "`addr2`='"+mb.getAddr2()+"',"; 
+			   sql += "`regip`='"+mb.getRegip()+"',"; 
+			   sql += "`rdate`=NOW();"; 
 
 		stmt.executeUpdate(sql); // 이 구문을 해줘야 sql 데이터베이스에 전송이 됨
 

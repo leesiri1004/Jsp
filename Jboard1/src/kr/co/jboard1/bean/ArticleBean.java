@@ -18,6 +18,7 @@ public class ArticleBean {
 	private String  nick;
 	private String	oldName;
 	private int		download;
+	private int		fileSeq;
 	
 	
 	public String getNick() {
@@ -44,6 +45,14 @@ public class ArticleBean {
 		this.download = download;
 	}
 	
+	public int getFileSeq() {
+		return fileSeq;
+	}
+	
+	public void setFileSeq(int fileSeq) {
+		this.fileSeq = fileSeq;
+	}
+	
 	public int getSeq() {
 		return seq;
 	}
@@ -55,6 +64,9 @@ public class ArticleBean {
 	}
 	public void setParent(int parent) {
 		this.parent = parent;
+	}
+	public void setParent(String parent) { // overload
+		this.parent = Integer.parseInt(parent);
 	}
 	public int getComment() {
 		return comment;
