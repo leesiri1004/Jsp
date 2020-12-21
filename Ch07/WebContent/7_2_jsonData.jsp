@@ -59,6 +59,7 @@
 		//json += "]";
 	//}
 	
+	// JSON 데이터 생성
 	Gson gson = new Gson();
 	String json = gson.toJson(members);
 	
